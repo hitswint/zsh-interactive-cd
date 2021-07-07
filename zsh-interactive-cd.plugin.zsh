@@ -256,7 +256,13 @@ _zic_complete_all() {
                 base=""
             fi
         fi
-        LBUFFER="${tokens[1]} "
+
+        # # 当$LBUFFER最后一个字符非空格时，以当前路径补全
+        if [[ (( $#tokens )) && ( $LBUFFER[-1] != " " ) ]]; then
+            # 除去最后1个元素的命令行参数
+            LBUFFER="${tokens[1,-2]} "
+        fi
+
         if [ -n "$base" ]; then
             base="${(q)base}"
             if [ "${tokens[2][1]}" = "~" ]; then
@@ -264,6 +270,7 @@ _zic_complete_all() {
             fi
             LBUFFER="${LBUFFER}${base}"
         fi
+
         if [[ "$matches" == *\.* ]]; then
             LBUFFER="${LBUFFER}${matches}"
         else
@@ -282,12 +289,19 @@ zic-completion() {
     cmd=${tokens[1]}
 
     if [[ "$LBUFFER" =~ "^\ *cd$" ]]; then
+        # 补全cd开头命令
         zle ${__zic_default_completion:-expand-or-complete}
     elif [ "$cmd" = cd ]; then
+        # ${#tokens}表示数组长度，也可以用-1
         _zic_complete ${tokens[2,${#tokens}]/#\~/$HOME}
     else
         # zle ${__zic_default_completion:-expand-or-complete}
-        _zic_complete_all ${tokens[2,${#tokens}]/#\~/$HOME}
+        # 当$LBUFFER最后一个字符非空格时，以当前路径补全
+        if [[ (( $#tokens )) && ( $LBUFFER[-1] != " " ) ]]; then
+            _zic_complete_all ${tokens[${#tokens}]/#\~/$HOME}
+        else
+            _zic_complete_all
+        fi
     fi
 }
 
